@@ -1,0 +1,70 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
+    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/your-org/terraform-s3-project.git'
+      }
+    }
+
+    stage('Terraform Init - Dev') {
+      steps {
+        dir('environments/dev') {
+          sh 'terraform init'
+        }
+      }
+    }
+
+    stage('Terraform Plan - Dev') {
+      steps {
+        dir('environments/dev') {
+          sh 'terraform plan'
+        }
+      }
+    }
+
+    stage('Terraform Apply - Dev') {
+      steps {
+        dir('environments/dev') {
+          sh 'terraform apply -auto-approve'
+        }
+      }
+    }
+
+    stage('Approval for Prod') {
+      steps {
+        input message: 'Proceed with Production Deployment?', ok: 'Yes, deploy to PROD'
+      }
+    }
+
+    stage('Terraform Init - Prod') {
+      steps {
+        dir('environments/prod') {
+          sh 'terraform init'
+        }
+      }
+    }
+
+    stage('Terraform Plan - Prod') {
+      steps {
+        dir('environments/prod') {
+          sh 'terraform plan'
+        }
+      }
+    }
+
+    stage('Terraform Apply - Prod') {
+      steps {
+        dir('environments/prod') {
+          sh 'terraform apply -auto-approve'
+        }
+      }
+    }
+  }
+}
