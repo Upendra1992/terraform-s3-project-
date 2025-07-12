@@ -4,6 +4,6 @@ provider "aws" {
 
 module "s3_bucket" {
   source      = "../../modules/s3_bucket"
-  bucket_name = "sanjaysn.site.prod"
+  bucket_name = "my-prod-bucket-8296"
   environment = "prod"
 }

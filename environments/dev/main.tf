@@ -4,6 +4,6 @@ provider "aws" {
 
 module "s3_bucket" {
   source      = "../../modules/s3_bucket"
-  bucket_name = "sanjaysn.site.dev"
+  bucket_name = "my-dev-bucket-8296"
   environment = "dev"
 }
