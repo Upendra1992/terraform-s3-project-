@@ -1,4 +1,5 @@
 pipeline {
+
   agent any
 
   environment {
@@ -6,64 +7,66 @@ pipeline {
     AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
   }
 
+  parameters {
+    choice(
+      name: 'ACTION',
+      choices: ['none', 'deploy', 'destroy-dev', 'destroy-prod'],
+      description: 'Choose action to perform'
+    )
+  }
+
   stages {
-    stage('Checkout') {
+
+    stage('Checkout Code') {
       steps {
         git branch: 'main', url: 'https://github.com/sanjusn2210/terraform-s3-project-.git'
       }
     }
 
-    stage('Terraform Init - Dev') {
-      steps {
-        dir('environments/dev') {
-          sh 'terraform init'
-        }
+    stage('Deploy to Dev and Prod') {
+      when {
+        expression { params.ACTION == 'deploy' }
       }
-    }
-
-    stage('Terraform Plan - Dev') {
       steps {
-        dir('environments/dev') {
-          sh 'terraform plan'
-        }
-      }
-    }
+        bat '''
+          cd environments\\dev
+          terraform init
+          terraform plan
+          terraform apply -auto-approve
+        '''
 
-    stage('Terraform Apply - Dev') {
-      steps {
-        dir('environments/dev') {
-          sh 'terraform apply -auto-approve'
-        }
-      }
-    }
-
-    stage('Approval for Prod') {
-      steps {
         input message: 'Proceed with Production Deployment?', ok: 'Yes, deploy to PROD'
+
+        bat '''
+          cd environments\\prod
+          terraform init
+          terraform plan
+          terraform apply -auto-approve
+        '''
       }
     }
 
-    stage('Terraform Init - Prod') {
+    stage('Destroy Dev') {
+      when {
+        expression { params.ACTION == 'destroy-dev' }
+      }
       steps {
-        dir('environments/prod') {
-          sh 'terraform init'
-        }
+        bat '''
+          cd environments\\dev
+          terraform destroy -auto-approve
+        '''
       }
     }
 
-    stage('Terraform Plan - Prod') {
-      steps {
-        dir('environments/prod') {
-          sh 'terraform plan'
-        }
+    stage('Destroy Prod') {
+      when {
+        expression { params.ACTION == 'destroy-prod' }
       }
-    }
-
-    stage('Terraform Apply - Prod') {
       steps {
-        dir('environments/prod') {
-          sh 'terraform apply -auto-approve'
-        }
+        bat '''
+          cd environments\\prod
+          terraform destroy -auto-approve
+        '''
       }
     }
   }
